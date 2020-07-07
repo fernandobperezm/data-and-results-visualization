@@ -1,0 +1,7 @@
+name: data-visualization-course
+channels:
+  - defaults
+dependencies:
+  - python=3.8
+  - anaconda=2020.02
+

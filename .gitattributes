@@ -1,0 +1,5 @@
+*.ipynb !text !filter !merge !diff
+*.py !text !filter !merge !diff
+*.md !text !filter !merge !diff
+*.yml !text !filter !merge !diff
+*.gitignore !text !filter !merge !diff
