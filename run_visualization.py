@@ -1,4 +1,5 @@
 from src.ECADDataset import ECADMeanTemperatureDataset
+from src.NOAA2010Dataset import NOAA2010Dataset
 
 
 if __name__ == "__main__":
@@ -23,6 +24,19 @@ if __name__ == "__main__":
     print(dataset.mean_temperatures[
               (dataset.mean_temperatures.mean_temperature >= 0)
               & (dataset.mean_temperatures.mean_temperature <= 200)
-              & (dataset.mean_temperatures.date >= "2020-01-01")
-              & (dataset.mean_temperatures.date < "2021-01-01")
+              & (dataset.mean_temperatures.date >= "2010-01-01")
+              & (dataset.mean_temperatures.date < "2011-01-01")
               & (dataset.mean_temperatures.source_id > 0)])
+
+    noaa2010dataset = NOAA2010Dataset()
+
+    noaa2010dataset.load_all_data()
+    print(noaa2010dataset.data)
+    print(noaa2010dataset.data[["date", "hourly_temperature"]].head(50))
+    print(noaa2010dataset.data[["date", "hourly_temperature"]].tail(50))
+    print(noaa2010dataset.data.info())
+
+    print(noaa2010dataset.data[
+              (noaa2010dataset.data.hourly_temperature >= 0)
+              & (noaa2010dataset.data.hourly_temperature <= 20)])
+
