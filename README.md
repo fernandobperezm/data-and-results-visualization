@@ -6,7 +6,7 @@ assignment of the Data and Results Visualization course from Politecnico di Mila
 
 Clone the repo using Github Desktop or by command line
 ```bash
-git clone <repo_url>
+git clone https://github.com/fernandobperezm/data-and-results-visualization.git
 ```
 
 From the command line, navigate and enter the repository folder and execute the following commands.
