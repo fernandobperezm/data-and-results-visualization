@@ -10,7 +10,7 @@ class OspitalettoDataset(object):
 
     def __init__(self):
         self._dataset_local_extract_path = os.path.join(".", "data", "Ospitaletto")
-        self._dataset_path = os.path.join(self._dataset_local_extract_path, "data_ten_minutes_steps.csv")
+        self._dataset_path = os.path.join(self._dataset_local_extract_path, "data.csv")
 
         self.processed_dataset_path = os.path.join(self._dataset_local_extract_path,
                                                    "processed",
