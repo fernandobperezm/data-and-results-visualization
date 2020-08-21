@@ -22,5 +22,5 @@ brew install git-lfs
 ```
 
 ## Authors
-- Selva Calixto Ortega: Ph.D. student in Energy, Nuclear Science and Technology at Politecnico di Milano.
+- Selva Calixto Guzmán: Ph.D. student in Energy, Nuclear Science and Technology at Politecnico di Milano.
 - Fernando Benjamín Pérez Maurera: Ph.D. student in Information Technology at Politecnico di Milano.
