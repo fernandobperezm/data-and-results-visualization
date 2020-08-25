@@ -3,7 +3,6 @@ from typing import Optional, Dict
 
 import numpy as np
 import pandas as pd
-import requests
 
 
 class NOAA2010Dataset(object):
@@ -17,8 +16,11 @@ class NOAA2010Dataset(object):
     ROCHESTER_NY: str = "rochester_newyork"
 
     def __init__(self):
-        self._dataset_url = "https://www.ncei.noaa.gov/orders/cdo/2209004.csv"
         self._dataset_local_extract_path = os.path.join(".", "data", "NOAA2010Dataset")
+
+        self._heat_demand_path = os.path.join(self._dataset_local_extract_path, "heat_demand.xlsx")
+        self._dhw_profile_path = os.path.join(self._dataset_local_extract_path, "dhw_random_profile.xlsx")
+
         self._dataset_path = os.path.join(self._dataset_local_extract_path, "data.csv")
 
         self.processed_miami_fl_dataset_path = os.path.join(self._dataset_local_extract_path,
@@ -39,24 +41,14 @@ class NOAA2010Dataset(object):
         self.olympia_wa_station_id: str = "USW00024227"
         self.rochester_ny_station_id: str = "USW00014768"
 
+        self._heat_demand: Optional[pd.DataFrame] = None
+        self._dhw_profile: Optional[pd.Series] = None
         self._all_data: Optional[pd.DataFrame] = None
+
         self.data: Dict = dict()
         self.processed_data: Dict = dict()
 
-        self.dataset_exists_locally = (os.path.exists(self._dataset_path)
-                                       and os.path.isfile(self._dataset_path))
-
-    def _save_dataset_on_local_disk(self):
-        dataset_content = requests.get(self._dataset_url).content
-        with open(self._dataset_path, mode="wb") as dataset_file:
-            dataset_file.write(dataset_content)
-
-        self.dataset_exists_locally = True
-
     def _load_all_data(self):
-        if not self.dataset_exists_locally:
-            self._save_dataset_on_local_disk()
-
         self._all_data = pd.read_csv(self._dataset_path,
                                      sep=",",
                                      header=0,
@@ -127,6 +119,9 @@ class NOAA2010Dataset(object):
                            (self.OLYMPIA_WA, self.processed_olympia_wa_dataset_path),
                            (self.ROCHESTER_NY, self.processed_rochester_ny_dataset_path)]
 
+        self._heat_demand = pd.read_excel(self._heat_demand_path)
+        self._dhw_profile = pd.read_excel(self._dhw_profile_path, index_col="Hour")
+
         for k, file_path in keys_with_paths:
             self.processed_data[k] = pd.read_csv(file_path,
                                                  index_col=0,
@@ -138,8 +133,32 @@ class NOAA2010Dataset(object):
                                                         "hourofyear": np.int32,
                                                         "air_temp_fit": np.float32})
 
+            num_rows_in_processed_data = self.processed_data[k].shape[0]
+            num_days = self.processed_data[k].dayofyear.max()
+
+            # We select the current city (determined by k and matched with the city_key column)
+            # Then we repeat the rows in the dataset for num_rows_in_processed_data times
+            # Third, we reindex the dataframe using the self.processed_data[k] index
+            # Lastly, we concat the heat demand columns into the processed data
+            heat_demand_for_city = self._heat_demand[self._heat_demand["city_key"] == k]
+            heat_demand_for_city = pd.concat([heat_demand_for_city] * num_rows_in_processed_data)
+            heat_demand_for_city = pd.DataFrame(heat_demand_for_city.values,
+                                                columns=heat_demand_for_city.columns,
+                                                index=self.processed_data[k].index)
+
+            # The DHW profile is constant through the year but changes during the day (however, it keeps the same
+            # values for the same hour in different days). The NOAA2010 dataset does not contain the first hour (
+            # 2010-01-01 00:00:00). As such, we remove the first hour too (with [1:]) to make the DFs match.
+            dhw_profile_for_city = pd.concat([self._dhw_profile] * num_days)[1:]
+            dhw_profile_for_city = pd.DataFrame(dhw_profile_for_city.values,
+                                                columns=dhw_profile_for_city.columns,
+                                                index=self.processed_data[k].index)
+
+            self.processed_data[k][heat_demand_for_city.columns] = heat_demand_for_city
+            self.processed_data[k]["DHW_hourly_consumption_ratio"] = dhw_profile_for_city["DHW Profile"]
+
     def load_processed_data(self, reload: bool = False):
-        if reload or len(self.processed_data) == 0:
+        if reload or len(self.processed_data) == 0 or self._heat_demand is None or self._dhw_profile is None:
             self._load_all_processed_data()
 
         return self.processed_data.copy()
