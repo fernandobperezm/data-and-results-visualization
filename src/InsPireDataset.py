@@ -135,6 +135,9 @@ class InsPireDataset(object):
             self.processed_data[k][heat_demand_for_city.columns] = heat_demand_for_city
             self.processed_data[k]["DHW_hourly_consumption_ratio"] = dhw_profile_for_city["DHW Profile"]
             self.processed_data[k]["season"] = calculate_season(self.processed_data[k])
+            self.processed_data[k]["hour"] = self.processed_data[k].index.hour
+            self.processed_data[k]["dayofweek"] = self.processed_data[k].index.dayofweek
+            self.processed_data[k]["date"] = self.processed_data[k].index.date
 
     def load_processed_data(self, reload: bool = False):
         if reload or len(self.processed_data) == 0 or self._heat_demand is None or self._dhw_profile is None:
