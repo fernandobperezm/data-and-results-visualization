@@ -114,6 +114,26 @@ class NOAA2010Dataset(object):
         return self.data.copy()
 
     def _load_all_processed_data(self):
+        def calculate_season(data: pd.DataFrame):
+            winter_ends = "2010-03-20"
+            spring_ends = "2010-06-21"
+            summer_ends = "2010-09-22"
+            fall_ends = "2010-12-21"
+
+            data["season"] = "-"
+
+            winter_mask = (data.index >= fall_ends) | (data.index < winter_ends)
+            spring_mask = (data.index >= winter_ends) & (data.index < spring_ends)
+            summer_mask = (data.index >= spring_ends) & (data.index < summer_ends)
+            fall_mask = (data.index >= summer_ends) & (data.index < fall_ends)
+
+            data.loc[winter_mask, "season"] = "winter"
+            data.loc[spring_mask, "season"] = "spring"
+            data.loc[summer_mask, "season"] = "summer"
+            data.loc[fall_mask, "season"] = "fall"
+
+            return data["season"]
+
         keys_with_paths = [(self.MIAMI_FL, self.processed_miami_fl_dataset_path),
                            (self.FRESNO_CA, self.processed_fresno_ca_dataset_path),
                            (self.OLYMPIA_WA, self.processed_olympia_wa_dataset_path),
@@ -156,6 +176,7 @@ class NOAA2010Dataset(object):
 
             self.processed_data[k][heat_demand_for_city.columns] = heat_demand_for_city
             self.processed_data[k]["DHW_hourly_consumption_ratio"] = dhw_profile_for_city["DHW Profile"]
+            self.processed_data[k]["season"] = calculate_season(self.processed_data[k])
 
     def load_processed_data(self, reload: bool = False):
         if reload or len(self.processed_data) == 0 or self._heat_demand is None or self._dhw_profile is None:
