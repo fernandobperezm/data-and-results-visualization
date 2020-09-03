@@ -5,6 +5,8 @@
   "Tmin_i": 45.0,
   "Ts1": 23.0,
   "Ts2": 29.0,
+  "cap_source1": 20,
+  "cap_source2": 20,
   "depth_aquifer": 30.0,
   "n_buildings_MFH": 1600.0,
   "n_buildings_SFH": 0.0,
