@@ -179,6 +179,7 @@ class NOAA2010Dataset(object):
             self.processed_data[k]["season"] = calculate_season(self.processed_data[k])
             self.processed_data[k]["hour"] = self.processed_data[k].index.hour
             self.processed_data[k]["dayofweek"] = self.processed_data[k].index.dayofweek
+            self.processed_data[k]["date"] = self.processed_data[k].index.date
 
     def load_processed_data(self, reload: bool = False):
         if reload or len(self.processed_data) == 0 or self._heat_demand is None or self._dhw_profile is None:
