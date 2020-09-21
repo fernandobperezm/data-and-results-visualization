@@ -2,6 +2,9 @@ name: data-visualization-course
 channels:
   - defaults
 dependencies:
-  - python=3.8
   - anaconda=2020.02
+  - python=3.8
+  - nodejs
+  - pyarrow
+prefix: /Users/fernandobperezm/.conda/envs/data-visualization-course
 
