@@ -25,17 +25,17 @@ class NOAA2010Dataset(object):
 
         self.processed_miami_fl_dataset_path = os.path.join(self._dataset_local_extract_path,
                                                             "processed",
-                                                            "miami_fl_data.csv")
+                                                            "miami_fl_data")
         self.processed_fresno_ca_dataset_path = os.path.join(self._dataset_local_extract_path,
                                                              "processed",
-                                                             "fresno_ca_data.csv")
+                                                             "fresno_ca_data")
         self.processed_olympia_wa_dataset_path = os.path.join(self._dataset_local_extract_path,
                                                               "processed",
-                                                              "olympia_wa_data.csv")
+                                                              "olympia_wa_data")
         self.processed_rochester_ny_dataset_path = os.path.join(self._dataset_local_extract_path,
                                                                 "processed",
-                                                                "rochester_ny_data.csv")
-
+                                                                "rochester_ny_data")
+        
         self.miami_fl_station_id: str = "USW00012839"
         self.fresno_ca_station_id: str = "USW00093193"
         self.olympia_wa_station_id: str = "USW00024227"
@@ -49,6 +49,28 @@ class NOAA2010Dataset(object):
         self.processed_data: Dict = dict()
 
     def _load_all_data(self):
+        def calculate_season(data: pd.DataFrame):
+            winter_ends = "2010-03-20"
+            spring_ends = "2010-06-21"
+            summer_ends = "2010-09-22"
+            fall_ends = "2010-12-21"
+
+            data["season"] = "-"
+
+            winter_mask = (data.index >= fall_ends) | (data.index < winter_ends)
+            spring_mask = (data.index >= winter_ends) & (data.index < spring_ends)
+            summer_mask = (data.index >= spring_ends) & (data.index < summer_ends)
+            fall_mask = (data.index >= summer_ends) & (data.index < fall_ends)
+
+            data.loc[winter_mask, "season"] = "winter"
+            data.loc[spring_mask, "season"] = "spring"
+            data.loc[summer_mask, "season"] = "summer"
+            data.loc[fall_mask, "season"] = "fall"
+
+            return data["season"]
+        
+        self._heat_demand = pd.read_excel(self._heat_demand_path)
+        self._dhw_profile = pd.read_excel(self._dhw_profile_path, index_col="Hour")
         self._all_data = pd.read_csv(self._dataset_path,
                                      sep=",",
                                      header=0,
@@ -102,69 +124,30 @@ class NOAA2010Dataset(object):
 
         self._all_data = self._all_data.set_index("timestamp")
 
-        self.data = {self.MIAMI_FL: self._all_data[self._all_data.station_id == self.miami_fl_station_id],
-                     self.FRESNO_CA: self._all_data[self._all_data.station_id == self.fresno_ca_station_id],
-                     self.OLYMPIA_WA: self._all_data[self._all_data.station_id == self.olympia_wa_station_id],
-                     self.ROCHESTER_NY: self._all_data[self._all_data.station_id == self.rochester_ny_station_id]}
-
-    def load_data(self, reload: bool = False) -> Dict:
-        if reload or len(self.data) == 0:
-            self._load_all_data()
-
-        return self.data.copy()
-
-    def _load_all_processed_data(self):
-        def calculate_season(data: pd.DataFrame):
-            winter_ends = "2010-03-20"
-            spring_ends = "2010-06-21"
-            summer_ends = "2010-09-22"
-            fall_ends = "2010-12-21"
-
-            data["season"] = "-"
-
-            winter_mask = (data.index >= fall_ends) | (data.index < winter_ends)
-            spring_mask = (data.index >= winter_ends) & (data.index < spring_ends)
-            summer_mask = (data.index >= spring_ends) & (data.index < summer_ends)
-            fall_mask = (data.index >= summer_ends) & (data.index < fall_ends)
-
-            data.loc[winter_mask, "season"] = "winter"
-            data.loc[spring_mask, "season"] = "spring"
-            data.loc[summer_mask, "season"] = "summer"
-            data.loc[fall_mask, "season"] = "fall"
-
-            return data["season"]
-
-        keys_with_paths = [(self.MIAMI_FL, self.processed_miami_fl_dataset_path),
-                           (self.FRESNO_CA, self.processed_fresno_ca_dataset_path),
-                           (self.OLYMPIA_WA, self.processed_olympia_wa_dataset_path),
-                           (self.ROCHESTER_NY, self.processed_rochester_ny_dataset_path)]
-
-        self._heat_demand = pd.read_excel(self._heat_demand_path)
-        self._dhw_profile = pd.read_excel(self._dhw_profile_path, index_col="Hour")
-
-        for k, file_path in keys_with_paths:
-            self.processed_data[k] = pd.read_csv(file_path,
-                                                 index_col=0,
-                                                 header=0,
-                                                 parse_dates=True,
-                                                 infer_datetime_format=True,
-                                                 dtype={"air_temp": np.float32,
-                                                        "dayofyear": np.int32,
-                                                        "hourofyear": np.int32,
-                                                        "air_temp_fit": np.float32})
-
-            num_rows_in_processed_data = self.processed_data[k].shape[0]
-            num_days = self.processed_data[k].dayofyear.max()
+        self.data = {self.MIAMI_FL: self._all_data[self._all_data.station_id == self.miami_fl_station_id].copy(),
+                     self.FRESNO_CA: self._all_data[self._all_data.station_id == self.fresno_ca_station_id].copy(),
+                     self.OLYMPIA_WA: self._all_data[self._all_data.station_id == self.olympia_wa_station_id].copy(),
+                     self.ROCHESTER_NY: self._all_data[self._all_data.station_id == self.rochester_ny_station_id].copy()}
+        
+        for city_key, dataset in self.data.items():
+        
+            num_rows_in_processed_data = dataset.shape[0]
+            num_days = dataset.index.dayofyear.max()
 
             # We select the current city (determined by k and matched with the city_key column)
             # Then we repeat the rows in the dataset for num_rows_in_processed_data times
             # Third, we reindex the dataframe using the self.processed_data[k] index
             # Lastly, we concat the heat demand columns into the processed data
-            heat_demand_for_city = self._heat_demand[self._heat_demand["city_key"] == k]
+            heat_demand_for_city = self._heat_demand[self._heat_demand["city_key"] == city_key]
             heat_demand_for_city = pd.concat([heat_demand_for_city] * num_rows_in_processed_data)
             heat_demand_for_city = pd.DataFrame(heat_demand_for_city.values,
                                                 columns=heat_demand_for_city.columns,
-                                                index=self.processed_data[k].index)
+                                                index=dataset.index).astype({"DHW_cons": np.float32,
+                                                                             "SH_cons": np.float32,
+                                                                             "SFH_bldg_tot": np.float32,
+                                                                             "MFH_bldg_tot": np.float32,
+                                                                             "%SH_y": np.float32,
+                                                                             "%DHW_y": np.float32})
 
             # The DHW profile is constant through the year but changes during the day (however, it keeps the same
             # values for the same hour in different days). The NOAA2010 dataset does not contain the first hour (
@@ -172,14 +155,35 @@ class NOAA2010Dataset(object):
             dhw_profile_for_city = pd.concat([self._dhw_profile] * num_days)[1:]
             dhw_profile_for_city = pd.DataFrame(dhw_profile_for_city.values,
                                                 columns=dhw_profile_for_city.columns,
-                                                index=self.processed_data[k].index)
+                                                index=dataset.index).astype({"DHW Profile": np.float32})
 
-            self.processed_data[k][heat_demand_for_city.columns] = heat_demand_for_city
-            self.processed_data[k]["DHW_hourly_consumption_ratio"] = dhw_profile_for_city["DHW Profile"]
-            self.processed_data[k]["season"] = calculate_season(self.processed_data[k])
-            self.processed_data[k]["hour"] = self.processed_data[k].index.hour
-            self.processed_data[k]["dayofweek"] = self.processed_data[k].index.dayofweek
-            self.processed_data[k]["date"] = self.processed_data[k].index.date
+            dataset[heat_demand_for_city.columns] = heat_demand_for_city
+            dataset["DHW_hourly_consumption_ratio"] = dhw_profile_for_city["DHW Profile"]
+            dataset["season"] = calculate_season(dataset)
+            dataset["date"] = dataset.index.date
+            dataset["month"] = dataset.index.month
+            dataset["dayofyear"] = dataset.index.dayofyear
+            dataset["dayofweek"] = dataset.index.dayofweek
+            dataset["hourofyear"] = (dataset.index.dayofyear - 1) * 24 + (dataset.index.hour + 1)
+            dataset["hour"] = dataset.index.hour
+
+            dataset = dataset
+            
+    def load_data(self, reload: bool = False) -> Dict:
+        if reload or len(self.data) == 0:
+            self._load_all_data()
+
+        return self.data.copy()
+
+    def _load_all_processed_data(self):
+        keys_with_paths = [(self.MIAMI_FL, self.processed_miami_fl_dataset_path),
+                           (self.FRESNO_CA, self.processed_fresno_ca_dataset_path),
+                           (self.OLYMPIA_WA, self.processed_olympia_wa_dataset_path),
+                           (self.ROCHESTER_NY, self.processed_rochester_ny_dataset_path)]
+
+        for k, file_path in keys_with_paths:
+            self.processed_data[k] = pd.read_parquet(path=f"{file_path}.parquet",
+                                                     engine="pyarrow")
 
     def load_processed_data(self, reload: bool = False):
         if reload or len(self.processed_data) == 0 or self._heat_demand is None or self._dhw_profile is None:
