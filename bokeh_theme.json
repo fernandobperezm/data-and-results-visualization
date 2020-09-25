@@ -1,0 +1,25 @@
+{
+    'attrs' : {
+        'Title': {
+            'text_color': 'black',
+            "text_font": "Helvetica",
+            "text_font_size": "12pt"
+        },
+        "Axis": {
+            'axis_label_text_color': 'black',
+            "axis_label_text_font": "Helvetica",
+            "axis_label_text_font_size": "10pt",
+            "major_label_text_font_size": "9pt"
+        },
+        "Legend": {
+            "label_text_font_size": "11pt",
+            "location": "center",
+            "orientation": "horizontal",
+            "click_policy": "hide",
+        },
+        "ColorBar": {
+            "location": [0,0],
+            "orientation": "vertical",
+        }
+    }
+}
