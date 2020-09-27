@@ -1,5 +1,6 @@
 {
   "DT_evap": 8.0,
+  "T_base_heat_degree": 15,
   "Tdhw": 55.0,
   "Tmax_i": 60.0,
   "Tmin_i": 45.0,
