@@ -180,10 +180,13 @@ class NOAA2010Dataset(object):
                            (self.FRESNO_CA, self.processed_fresno_ca_dataset_path),
                            (self.OLYMPIA_WA, self.processed_olympia_wa_dataset_path),
                            (self.ROCHESTER_NY, self.processed_rochester_ny_dataset_path)]
-
+        columns_from_kw_to_mw = ['heat_source1', 'heat_source2', 'heat_aquifer', "E_el", "Total_consumption", "Total_consumption_fit",]
+        
         for k, file_path in keys_with_paths:
-            self.processed_data[k] = pd.read_parquet(path=f"{file_path}.parquet",
-                                                     engine="pyarrow")
+            data = pd.read_parquet(path=f"{file_path}.parquet",
+                                   engine="pyarrow")
+            data[columns_from_kw_to_mw] = data[columns_from_kw_to_mw] / 1000
+            self.processed_data[k] = data
 
     def load_processed_data(self, reload: bool = False):
         if reload or len(self.processed_data) == 0 or self._heat_demand is None or self._dhw_profile is None:

@@ -135,10 +135,13 @@ class InsPireDataset(object):
                            (self.MADRID_SPA, self.processed_madrid_spa_dataset_path),
                            (self.ROME_IT, self.processed_rome_it_dataset_path),
                            (self.STUTTGART_GER, self.processed_stuttgart_ger_dataset_path)]
-
+        columns_from_kw_to_mw = ['heat_source1', 'heat_source2', 'heat_aquifer', "E_el", "Total_consumption", "Total_consumption_fit",]
+        
         for k, file_path in keys_with_paths:
-            self.processed_data[k] = pd.read_parquet(path=f"{file_path}.parquet",
-                                                     engine="pyarrow")
+            data = pd.read_parquet(path=f"{file_path}.parquet",
+                                   engine="pyarrow")
+            data[columns_from_kw_to_mw] = data[columns_from_kw_to_mw] / 1000
+            self.processed_data[k] = data
 
     def load_processed_data(self, reload: bool = False):
         if reload or len(self.processed_data) == 0:
