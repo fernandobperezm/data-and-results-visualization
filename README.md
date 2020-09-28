@@ -4,21 +4,22 @@ assignment of the Data and Results Visualization course from Politecnico di Mila
 
 ## Installation
 
-Clone the repo using Github Desktop or by command line
+First, install git-lfs if you do not have it already
+```shell script
+brew install git-lfs
+```
+
+Then, clone the repo using Github Desktop or by command line
 ```shell script
 git clone https://github.com/fernandobperezm/data-and-results-visualization.git
 ```
 
 From the command line, navigate and enter the repository folder and execute the following commands.
 ```shell script
+cd data-and-results-visualization
 conda env create -f environment.yml
 conda activate data-visualization-course
-python run_visualization.py
-```
-
-Install git-lfs
-```shell script
-brew install git-lfs
+jupyter notebook
 ```
 
 ## Data Processing
