@@ -1,12 +1,15 @@
 import os
+from typing import Dict, Optional
+
 import numpy as np
 import pandas as pd
 
-from typing import Dict, Optional
-
 
 class OspitalettoDataset(object):
-    OSPITALETTO: str = "ospitaletto"
+    """
+    This dataset contains hourly measurements of different attributes like air temperature, dewp, and more.
+    """
+    OSPITALETTO: str ="ospitaletto_italy"
     LONDON_UK: str = "london_uk"
     MADRID_SPA: str = "madrid_spain"
     ROME_IT: str = "rome_italy"
@@ -14,45 +17,38 @@ class OspitalettoDataset(object):
 
     def __init__(self):
         self._dataset_local_extract_path = os.path.join(".", "data", "Ospitaletto")
-        
+
         self._heat_demand_path = os.path.join(self._dataset_local_extract_path, "heat_demand.xlsx")
         self._dhw_profile_path = os.path.join(self._dataset_local_extract_path, "dhw_random_profile.xlsx")
         
-        self._osp_dataset_path = os.path.join(self._dataset_local_extract_path, "data.csv")
-        
+        self._osp_dataset_path = os.path.join(self._dataset_local_extract_path, "Osp.xls")
         self._london_dataset_path = os.path.join(self._dataset_local_extract_path, "London.xls")
         self._madrid_dataset_path = os.path.join(self._dataset_local_extract_path, "Madrid.xls")
         self._rome_dataset_path = os.path.join(self._dataset_local_extract_path, "Rome.xls")
         self._stuttgart_dataset_path = os.path.join(self._dataset_local_extract_path, "Stuttgart.xls")
         
-        
-        self.processed_dataset_path = os.path.join(self._dataset_local_extract_path,
-                                                   "processed",
-                                                   "data.csv")
+        self.processed_osp_dataset_path = os.path.join(self._dataset_local_extract_path,
+                                                             "processed",
+                                                             "osp_data")
+        self.processed_london_uk_dataset_path = os.path.join(self._dataset_local_extract_path,
+                                                             "processed",
+                                                             "london_uk_data")
+        self.processed_madrid_spa_dataset_path = os.path.join(self._dataset_local_extract_path,
+                                                              "processed",
+                                                              "madrid_spa_data")
+        self.processed_rome_it_dataset_path = os.path.join(self._dataset_local_extract_path,
+                                                           "processed",
+                                                           "rome_it_data")
+        self.processed_stuttgart_ger_dataset_path = os.path.join(self._dataset_local_extract_path,
+                                                                 "processed",
+                                                                 "stuttgart_ger_data")
 
-            
         self._heat_demand: Optional[pd.DataFrame] = None
         self._dhw_profile: Optional[pd.Series] = None
 
         self.data: Dict = dict()
         self.processed_data: Dict = dict()
 
-#    def load_all_data(self):
- #       self.data = pd.read_csv(self._dataset_path,
-  #                              names=["fist", "timestamp", "air_temp"],
-   #                             usecols=["timestamp", "air_temp"],
-    #                            index_col=0,
-     #                           header=0,
-    #                            parse_dates=True,
-  #                              infer_datetime_format=True)
-        # Remove invalid values
-        # Another option is to set these values to 15 using: df.loc[df['Temp'] == -999, 'Temp'] = 15
-        # Or using the mean: df.loc[df['Temp'] == -999, 'Temp'] = df['Temp'].mean()
-  #      self.data = self.data[(self.data.air_temp != 999.0)
-  #                            & (self.data.air_temp != -999.0)]
-
-  #      return {self.OSPITALETTO: self.data.copy()}
-    
     def _load_all_data(self):
         def calculate_season(data: pd.DataFrame):
             winter_ends = "2017-03-20"
@@ -79,7 +75,6 @@ class OspitalettoDataset(object):
                            (self.MADRID_SPA, self._madrid_dataset_path),
                            (self.ROME_IT, self._rome_dataset_path),
                            (self.STUTTGART_GER, self._stuttgart_dataset_path)]
-                           
         
         self._heat_demand = pd.read_excel(self._heat_demand_path)
         self._dhw_profile = pd.read_excel(self._dhw_profile_path, index_col="Hour")
@@ -133,34 +128,30 @@ class OspitalettoDataset(object):
             data["hour"] = data.index.hour
 
             self.data[k] = data
-            
-    ####        
 
     def load_data(self, reload: bool = False) -> Dict:
-        if reload or len(self.data) == 0 or self._heat_demand is None or self._dhw_profile is None:
+        if reload or self._heat_demand is None or self._dhw_profile is None:
             self._load_all_data()
 
         return self.data.copy()
-    
-    
-    def load_hourly_data(self):
-        if self.data is None:
-            self.load_all_data()
 
-        return self.data['air_temp'].resample('H').mean().to_frame()
+    def _load_all_processed_data(self):
+        keys_with_paths = [(self.LONDON_UK, self.processed_london_uk_dataset_path),
+                           (self.MADRID_SPA, self.processed_madrid_spa_dataset_path),
+                           (self.ROME_IT, self.processed_rome_it_dataset_path),
+                           (self.STUTTGART_GER, self.processed_stuttgart_ger_dataset_path)]
+        columns_from_kw_to_mw = ['heat_source1', 'heat_source2', 'heat_aquifer', "E_el", "Total_consumption", "Total_consumption_fit",]
+        
+        for k, file_path in keys_with_paths:
+            data = pd.read_parquet(path=f"{file_path}.parquet",
+                                   engine="pyarrow")
+            data[columns_from_kw_to_mw] = data[columns_from_kw_to_mw] / 1000
+            self.processed_data[k] = data
 
     def load_processed_data(self, reload: bool = False):
-        if reload or self.processed_data is None:
-            self.processed_data = pd.read_csv(self.processed_dataset_path,
-                                              index_col=0,
-                                              header=0,
-                                              parse_dates=True,
-                                              infer_datetime_format=True,
-                                              dtype={"air_temp": np.float32,
-                                                     "dayofyear": np.int32,
-                                                     "hourofyear": np.int32,
-                                                     "air_temp_fit": np.float32})
+        if reload or len(self.processed_data) == 0:
+            self._load_all_processed_data()
 
-        return {self.OSPITALETTO: self.processed_data.copy()}
+        return self.processed_data.copy()
 
 
