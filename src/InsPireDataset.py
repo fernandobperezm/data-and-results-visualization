@@ -20,6 +20,7 @@ class InsPireDataset(object):
 
         self._heat_demand_path = os.path.join(self._dataset_local_extract_path, "heat_demand.xlsx")
         self._dhw_profile_path = os.path.join(self._dataset_local_extract_path, "dhw_random_profile.xlsx")
+        self._sh_profile_path = os.path.join(self._dataset_local_extract_path, "sh_random_profile.xlsx")
 
         self._london_dataset_path = os.path.join(self._dataset_local_extract_path, "London.xls")
         self._madrid_dataset_path = os.path.join(self._dataset_local_extract_path, "Madrid.xls")
@@ -41,6 +42,7 @@ class InsPireDataset(object):
 
         self._heat_demand: Optional[pd.DataFrame] = None
         self._dhw_profile: Optional[pd.Series] = None
+        self._sh_profile: Optional[pd.Series] = None
 
         self.data: Dict = dict()
         self.processed_data: Dict = dict()
@@ -73,6 +75,8 @@ class InsPireDataset(object):
         
         self._heat_demand = pd.read_excel(self._heat_demand_path)
         self._dhw_profile = pd.read_excel(self._dhw_profile_path, index_col="Hour")
+        self._sh_profile = pd.read_excel(self._sh_profile_path, index_col="Hour")
+    
 
         for k, file_path in keys_with_paths:
             data = pd.read_excel(file_path,
@@ -111,9 +115,16 @@ class InsPireDataset(object):
             dhw_profile_for_city = pd.DataFrame(dhw_profile_for_city.values,
                                                 columns=dhw_profile_for_city.columns,
                                                 index=data.index).astype({"DHW Profile": np.float32})
+            
+            sh_profile_for_city = pd.concat([self._dhw_profile] * num_days)
+            sh_profile_for_city = pd.concat([sh_profile_for_city, sh_profile_for_city.head(1)])
+            sh_profile_for_city = pd.DataFrame(sh_profile_for_city.values,
+                                                columns=sh_profile_for_city.columns,
+                                                index=data.index).astype({"SH Profile": np.float32})
 
             data[heat_demand_for_city.columns] = heat_demand_for_city
             data["DHW_hourly_consumption_ratio"] = dhw_profile_for_city["DHW Profile"]
+            data["SH_hourly_consumption_ratio"] = sh_profile_for_city["SH Profile"]
             data["season"] = calculate_season(data)
             data["date"] = data.index.date
             data["month"] = data.index.month
@@ -125,7 +136,7 @@ class InsPireDataset(object):
             self.data[k] = data
 
     def load_data(self, reload: bool = False) -> Dict:
-        if reload or len(self.data) == 0 or self._heat_demand is None or self._dhw_profile is None:
+        if reload or len(self.data) == 0 or self._heat_demand is None or self._dhw_profile is None or self._sh_profile is None:
             self._load_all_data()
 
         return self.data.copy()
