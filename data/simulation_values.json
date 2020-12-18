@@ -15,6 +15,7 @@
   "cap_source1": 3,
   "cap_source2": 0,
   "depth_aquifer": 30.0,
+  "Interest_Rate": 0.1,
   "n_buildings_MFH": 1600.0,
   "n_buildings_SFH": 0.0,
   "s1_schedule": [
