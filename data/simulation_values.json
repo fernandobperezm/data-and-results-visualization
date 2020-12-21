@@ -4,6 +4,7 @@
   "DT_evap": 10.0,
   "Heat_demand": 60000,
   "Heat_year": 60000,
+  "Interest_Rate": 0.1,
   "T_base_cool_degree": 30,
   "T_base_heat_degree": 15,
   "Tdhw": 55.0,
@@ -13,9 +14,8 @@
   "Ts2": 23.0,
   "cap_ground": 5,
   "cap_source1": 3,
-  "cap_source2": 0,
+  "cap_source2": 2,
   "depth_aquifer": 30.0,
-  "Interest_Rate": 0.1,
   "n_buildings_MFH": 1600.0,
   "n_buildings_SFH": 0.0,
   "s1_schedule": [
