@@ -115,7 +115,8 @@ class InsPireDataset(object):
                                                                           "Gas_price_ind": np.float32,
                                                                           "Gas_price_res": np.float32,
                                                                           "El_price_ind": np.float32,
-                                                                          "El_price_res": np.float32})
+                                                                          "El_price_res": np.float32,
+                                                                          "CO2_gas": np.float32})
 
             # The DHW profile is constant through the year but changes during the day (however, it keeps the same
             # values for the same hour in different days). The InsPire dataset contains an extra hour (2018-01-01
