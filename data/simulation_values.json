@@ -5,7 +5,7 @@
   "Heat_demand": 60000,
   "Heat_year": 60000,
   "Interest_Rate": 0.1,
-  "T_base_cool_degree": 30,
+  "T_base_cool_degree": 18,
   "T_base_heat_degree": 15,
   "Tdhw": 55.0,
   "Tmax_i": 60.0,
